@@ -53,20 +53,11 @@ print(f"\n\n*** Calculating the {title} activities' LCIAs \
 for the following databases:\n\t" + '\n\t'.join(database_names))
 
 #%% FILTER ACTIVITIES
-if os.path.isfile(activities_list):
-    print(f'\nActivities list already exists: \n{activities_list}')
-    overwrite = input('Do you want to delete it? (y/n): ')
-    if overwrite == 'y':
-        print('Overwriting...')
-        os.remove(activities_list)
-    else:
-        print('Keeping existing activities list')
 
-if not os.path.isfile(activities_list):
-    # filter activities from databases
-    GetActivitiesMP(database_names, project_name, title)
-    # merge activities from all databases
-    MergeActivities(database_names, project_name, title)
+# filter activities from databases
+GetActivitiesMP(database_names, project_name, title)
+# merge activities from all databases
+MergeActivities(database_names, project_name, title)
     
 
 #%% RUN CALCULATIONS
