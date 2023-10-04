@@ -17,7 +17,7 @@ import bw2calc as bc
 
 from user_settings import methods, database_names, dir_tmp, dir_logs
 
-num_cpus = int(os.getenv('SLURM_CPUS_PER_TASK', default=cpu_count()))
+num_cpus = int(os.environ.get('SLURM_CPUS_PER_TASK', os.environ.get('SLURM_JOB_CPUS_PER_NODE', cpu_count())))
 
 
 def LCIA(activities_list, project_name, title, limit=None):

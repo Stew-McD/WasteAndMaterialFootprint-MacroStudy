@@ -30,7 +30,8 @@ from multiprocessing import Pool, cpu_count
 
 from user_settings import dir_tmp, dir_data, filters
 
-num_cpus = int(os.getenv('SLURM_CPUS_PER_TASK', default=cpu_count()))
+num_cpus = int(os.environ.get('SLURM_CPUS_PER_TASK', os.environ.get('SLURM_JOB_CPUS_PER_NODE', cpu_count())))
+
 
 def worker(args):
     return GetActivities(*args)
