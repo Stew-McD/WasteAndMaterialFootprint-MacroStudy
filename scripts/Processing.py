@@ -26,42 +26,85 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-from user_settings import dir_results
+from user_settings import dir_results, combined_raw_csv, combined_raw_pickle
 
+    
 def Raw2Cooked(activities_list, combined_raw_pickle):
     """Convert raw data to processed data."""
     
     def load_data():
-        """Load data from the provided sources."""
+        """Load data from provided sources."""
+        
         print("\n* Loading activity list with metadata from previous script")
         acts_all = pd.read_csv(activities_list, sep=";").reset_index(drop=True)
         acts = acts_all[['name', 'database', 'code', 'prod_category', 'prod_sub_category', 'location']]
+        
         print("\n* Loading raw calculation results")
         df_results = pd.read_pickle(combined_raw_pickle).reset_index(drop=True)
-        df = pd.merge(acts, df_results, how='outer', on=['code', 'name', 'database'])
-        return df_results
-
-    def process_columns(df):
-        """Process and adjust column names and data."""
-        df = df.drop(columns=['activity type'])
-        capital_columns = [col for col in df.columns if col[0].isupper()]
-        df.rename(columns={col: col + " (demand)" for col in capital_columns}, inplace=True)
+        df = pd.merge(acts, df_results, how='right', on=['code', 'name', 'database', 'location'])
+        
         return df
 
-    def remove_unwanted_rows(df):
-        """Remove rows without waste and zeros."""
+    def process_data(df):
+        """Process and adjust data."""
+        # Process columns
+        df = _process_columns(df)
+        
+        # Remove unwanted rows
+        df, cols_meta = _remove_unwanted_rows(df)
+        
+        # Adjust units and calculations
+        df, cols_vars = _adjust_units_and_calculations(df, cols_meta)
+        
+        # Initialize column sets
+        column_sets = _initialize_column_sets(df, cols_meta, **cols_vars)
+        
+        return df, column_sets
+
+    def _clean_data(df):
+        
+        # Rename columns with capital letters (the material demand ones)
+        capital_columns = [col for col in df.columns if col[0].isupper()]
+        df.rename(columns={col: col + " (demand)" for col in capital_columns}, inplace=True)
+        
+        # Remove columns with all zeros (and other unwanted columns)
+        cols_to_drop = df.columns[(df == 0).all() | df.isnull().all()].to_list()
+        cols_to_drop += ['parameters full', 'log parameters', 'amount', 'worksheet name', 'activity type']
+        
+        cols_to_drop = [col for col in cols_to_drop if col in df.columns]
+        print(f"Dropped columns: {list(cols_to_drop)}")
+        df.drop(columns=cols_to_drop, inplace=True)
+        
+        # Remove rows that have neither waste nor material demand
         no_waste = df[(df.waste_total_solid + df.waste_total_liquid) == 0]
-        print("\n* No waste found for activities: \n", no_waste.name.values)
+        print(f"\n* No waste found for {len(no_waste)} activities: \n", no_waste.name.values)
+
+        cols_material = [col for col in df.columns if "(demand)" in col]
+        no_material = df[df[cols_material].all(axis=1) == 0]
+        
+        print(f"\n* No material demand found for {len(no_material)} activities: \n {no_material.name.values}")
+        
+        rows_to_drop = list(set(no_waste.index.to_list()).union(set(no_material.index.to_list())))
+        
+        df.drop(rows_to_drop, inplace=True).reset_index(drop=True)
+
+
+        return df
+
+    def _remove_unwanted_rows(df):
+
+        no_material = df
+        
         df = df[(df.waste_total_solid + df.waste_total_liquid) != 0]
         cols_meta = ['name', 'prod_category', 'prod_sub_category', 'unit', 'code', 'location', 'database', 'reference product']
         zero_sum = df[df.columns.difference(cols_meta)].loc[:, (df == 0).any(axis=0)].columns.to_list()
         print("\n* Removing columns with zero sum: \n", zero_sum)
-        df = df.drop(zero_sum, axis=1)
+        df.drop(zero_sum, axis=1, inplace=True)
         return df, cols_meta
 
-    def adjust_units_and_calculations(df, cols_meta):
+    def _adjust_units_and_calculations(df, cols_meta):
         """Adjust units and perform relevant calculations."""
-        
+    
         # Replace zeros with NaN for subsequent calculations
         df = df.replace({0: np.nan})
 
@@ -93,26 +136,15 @@ def Raw2Cooked(activities_list, combined_raw_pickle):
         df['waste_uncategorised_per'] = 100 * (df.waste_total - df.waste_categorised).div(df.waste_total)
         df = df.drop('waste_categorised', axis=1)
 
-        cols_waste = [col for col in df.columns if 'waste' in col]
-        cols_material = [col for col in df.columns if '(demand)' in col]
-        not_methods = cols_material + cols_meta + cols_waste
-        cols_methods = [col for col in df.columns if col not in not_methods]
-
-        return df, cols_percentage, cols_waste, cols_solid, cols_liquid, cols_categorised, cols_methods, cols_material
-
-    def initialize_column_sets(df, cols_meta, cols_total, cols_waste, cols_solid, cols_liquid, cols_methods, cols_percentage, cols_material):
-        """Initialize column sets based on existing dataframe and metadata columns."""
-        cols_t = cols_meta + cols_total
-        cols_w = cols_meta + cols_waste
-        cols_s = cols_meta + cols_solid
-        cols_l = cols_meta + cols_liquid
-        cols_m = cols_meta + cols_methods
-        cols_d = cols_meta + cols_material
-        cols_per = cols_total + cols_percentage + cols_meta
-
-        cols_per_df_liq = [x for x in cols_per if "solid" not in x]
-        cols_per_df_sol = [x for x in cols_per if "liquid" not in x]
-        return cols_t, cols_w, cols_s, cols_l, cols_m, cols_d, cols_per, cols_per_df_liq, cols_per_df_sol 
+        return df, {
+            "cols_percentage": cols_percentage, 
+            "cols_waste": cols_waste, 
+            "cols_solid": cols_solid,
+            "cols_liquid": cols_liquid
+            # add other column lists as needed
+        }
+    
+    
 
     def save_processed_data(df):
         """Save processed data."""

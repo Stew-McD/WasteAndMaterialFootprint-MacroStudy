@@ -40,9 +40,9 @@ if project_name not in bd.projects:
     exit(0)
 
 else:
-    print(f'\n\n{"="*80}\n')
-    print(f'\t\t *** Starting processing in project {project_name} *** ')
-    print(f'\n{"="*80}\n')
+    print(f'\n\n{"="*100}\n')
+    print(f'\t\t *** Processing activity set "{title}" in project {project_name} *** ')
+    print(f'\n{"="*100}\n')
     bd.projects.set_current(project_name)
 
 
@@ -144,3 +144,5 @@ for DIR in dirs:
         os.makedirs(DIR)
         
 activities_list = dir_data / f"activities_list_merged_{project_name}_{title}.csv"
+
+combined_raw_csv, combined_raw_pickle = (dir_tmp / f"{title}_combined_rawresults_df.{x}" for x in ['csv', 'pickle'])

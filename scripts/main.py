@@ -65,8 +65,8 @@ MergeActivities(database_names, project_name, title)
 LCIA()
 
 # merge results from all databases
-combined_raw_csv, combined_raw_pickle = \
-    MergeResults(project_name, title)
+
+MergeResults(project_name, title)
 
 # #%% PROCESS RESULTS
 
