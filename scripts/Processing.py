@@ -25,14 +25,15 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import sys
 
-from user_settings import dir_results, combined_raw_csv, combined_raw_pickle
+from user_settings import combined_raw_pickle, activities_list, combined_cooked_pickle, combined_cooked_csv
 
     
-def Raw2Cooked(activities_list, combined_raw_pickle):
+def Raw2Cooked():
     """Convert raw data to processed data."""
     
-    def load_data():
+    def _load_data():
         """Load data from provided sources."""
         
         print("\n* Loading activity list with metadata from previous script")
@@ -44,22 +45,6 @@ def Raw2Cooked(activities_list, combined_raw_pickle):
         df = pd.merge(acts, df_results, how='right', on=['code', 'name', 'database', 'location'])
         
         return df
-
-    def process_data(df):
-        """Process and adjust data."""
-        # Process columns
-        df = _process_columns(df)
-        
-        # Remove unwanted rows
-        df, cols_meta = _remove_unwanted_rows(df)
-        
-        # Adjust units and calculations
-        df, cols_vars = _adjust_units_and_calculations(df, cols_meta)
-        
-        # Initialize column sets
-        column_sets = _initialize_column_sets(df, cols_meta, **cols_vars)
-        
-        return df, column_sets
 
     def _clean_data(df):
         
@@ -76,8 +61,15 @@ def Raw2Cooked(activities_list, combined_raw_pickle):
         df.drop(columns=cols_to_drop, inplace=True)
         
         # Remove rows that have neither waste nor material demand
-        no_waste = df[(df.waste_total_solid + df.waste_total_liquid) == 0]
-        print(f"\n* No waste found for {len(no_waste)} activities: \n", no_waste.name.values)
+        try:
+            no_waste = df[(df.waste_total_solid + df.waste_total_liquid) == 0]
+            print(f"\n* No waste found for {len(no_waste)} activities: \n", no_waste.name.values)
+        except Exception as e:
+            print("\n* No waste found for any activities, something went wrong.:'( *")
+            print("Check the raw data, maybe reprocess your database and try again.")
+            
+            
+            
 
         cols_material = [col for col in df.columns if "(demand)" in col]
         no_material = df[df[cols_material].all(axis=1) == 0]
@@ -91,18 +83,7 @@ def Raw2Cooked(activities_list, combined_raw_pickle):
 
         return df
 
-    def _remove_unwanted_rows(df):
-
-        no_material = df
-        
-        df = df[(df.waste_total_solid + df.waste_total_liquid) != 0]
-        cols_meta = ['name', 'prod_category', 'prod_sub_category', 'unit', 'code', 'location', 'database', 'reference product']
-        zero_sum = df[df.columns.difference(cols_meta)].loc[:, (df == 0).any(axis=0)].columns.to_list()
-        print("\n* Removing columns with zero sum: \n", zero_sum)
-        df.drop(zero_sum, axis=1, inplace=True)
-        return df, cols_meta
-
-    def _adjust_units_and_calculations(df, cols_meta):
+    def _adjust_units_and_calculations(df):
         """Adjust units and perform relevant calculations."""
     
         # Replace zeros with NaN for subsequent calculations
@@ -136,59 +117,24 @@ def Raw2Cooked(activities_list, combined_raw_pickle):
         df['waste_uncategorised_per'] = 100 * (df.waste_total - df.waste_categorised).div(df.waste_total)
         df = df.drop('waste_categorised', axis=1)
 
-        return df, {
-            "cols_percentage": cols_percentage, 
-            "cols_waste": cols_waste, 
-            "cols_solid": cols_solid,
-            "cols_liquid": cols_liquid
-            # add other column lists as needed
-        }
+        return df
     
-    
-
-    def save_processed_data(df):
-        """Save processed data."""
-        combined_cooked_pickle_str = str(combined_raw_pickle).replace("raw", "cooked").replace('tmp', 'results')
-        combined_cooked_pickle = Path(combined_cooked_pickle_str)
-        df.to_pickle(combined_cooked_pickle)
-        combined_cooked_csv_str = combined_cooked_pickle_str.replace("pickle", "csv")
-        combined_cooked_csv = Path(combined_cooked_csv_str)
-        df.to_csv(combined_cooked_csv, sep=';', index=False)
-        print(f"\nCooked results saved to:\n- pickle: {combined_cooked_pickle}\n- csv: {combined_cooked_csv}")
-        return combined_cooked_csv, combined_cooked_pickle
-
+    # run processing functions
     print("\n** Starting processing **")
-
-    # Load data
-    df = load_data()
-
-    # Process columns
-    df = process_columns(df)
-
-    # Remove unwanted rows and retrieve metadata columns
-    df, cols_meta = remove_unwanted_rows(df)
-
-    # Adjust units and perform relevant calculations
-    (df, cols_percentage, cols_waste, cols_solid, cols_liquid, cols_categorised, cols_methods, cols_material) = adjust_units_and_calculations(df, cols_meta)
-
-    # Define total columns list
-    cols_total = [
-        'waste_total', 'waste_haz_tot', 'waste_haz_tot_per', 
-        'waste_circ', 'waste_uncategorised_per'
-    ]
-
-    # Initialize various column sets
-    (cols_t, cols_w, cols_s, cols_l, cols_m, cols_d,
-    cols_per, cols_per_df_liq, cols_per_df_sol) = initialize_column_sets(
-        df, cols_meta, cols_total, cols_waste, cols_solid, cols_liquid, cols_methods, cols_percentage, cols_material
-    )
-
-    return save_processed_data(df)
+    df = _load_data()
+    df = _clean_data(df)
+    df = _adjust_units_and_calculations(df)
+    
+    # save data
+    df.to_pickle(combined_cooked_pickle)
+    df.to_csv(combined_cooked_csv, sep=";", index=False)
+    print(f"\n* Processed data saved to: \ncsv - {combined_cooked_csv}\npickle - {combined_cooked_pickle}")
+    
+    return 
 
 
 #%% extract top activities
 
-from pathlib import Path
 
 def ExtractTopActivities(combined_cooked_pickle, n_top=1):
     """Extract top activities for each category and waste/material indicator.

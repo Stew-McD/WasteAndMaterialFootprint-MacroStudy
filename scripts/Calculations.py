@@ -247,7 +247,7 @@ def LCIA_singledatabase(args):
        
     return
 
-def MergeResults(project_name, title):
+def MergeResults():
     print(f"\n** Merging results from :\n {project_name} : {title}")
     
     # get paths to individual results
@@ -270,4 +270,4 @@ def MergeResults(project_name, title):
     print(f"\n*Saved combined activities list \n\tto csv: {combined_raw_csv}\n\tand pickle: {combined_raw_pickle}")
 
     
-    return combined_raw_csv, combined_raw_pickle
+    return

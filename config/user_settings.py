@@ -27,9 +27,9 @@ from pathlib import Path
 import bw2data as bd
 
 
-title = 'markets01'
-project_name = 'WMF-SSP125_cutoff'
-limit = 100 # limit the number of activities to be processed (for testing)
+title = 'markets_test'
+project_name = 'WMF-default'
+limit = 10 # limit the number of activities to be processed (for testing)
 verbose = False
 
 
@@ -146,3 +146,5 @@ for DIR in dirs:
 activities_list = dir_data / f"activities_list_merged_{project_name}_{title}.csv"
 
 combined_raw_csv, combined_raw_pickle = (dir_tmp / f"{title}_combined_rawresults_df.{x}" for x in ['csv', 'pickle'])
+
+combined_cooked_csv, combined_cooked_pickle = (dir_results / f"{title}_combined_cookedresults_df.{x}" for x in ['csv', 'pickle'])

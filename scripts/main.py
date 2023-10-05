@@ -44,7 +44,7 @@ from FilterActivities import GetActivitiesMP, MergeActivities
 from Calculations import LCIA, MergeResults 
 from Processing import Raw2Cooked, ExtractTopActivities
 
-from user_settings import title, project_name, database_names, activities_list, limit, verbose
+from user_settings import title, project_name, database_names, verbose
 
 print('   \t\t\t*** Starting script main.py ***')
 print(f'{"."*80}\n')
@@ -66,12 +66,12 @@ LCIA()
 
 # merge results from all databases
 
-MergeResults(project_name, title)
+MergeResults()
 
 # #%% PROCESS RESULTS
 
-# combined_cooked_csv, combined_cooked_pickle = \
-#     Raw2Cooked(activities_list, combined_raw_pickle)
+
+Raw2Cooked()
 
 # # extract top activities
 # top_csv, top_pickle = \
