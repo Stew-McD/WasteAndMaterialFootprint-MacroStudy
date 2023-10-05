@@ -28,7 +28,7 @@ import pandas as pd
 import numpy as np
 from multiprocessing import Pool, cpu_count
 
-from user_settings import dir_tmp, dir_data, filters
+from user_settings import dir_tmp, dir_data, filters, verbose
 
 num_cpus = int(os.environ.get('SLURM_CPUS_PER_TASK', os.environ.get('SLURM_JOB_CPUS_PER_NODE', cpu_count())))
 
@@ -37,16 +37,22 @@ def worker(args):
     return GetActivities(*args)
 
 def GetActivitiesMP(database_names, project_name, title):
-    args_list = [(database_name, project_name, title) for database_name in database_names]
+    args_list = [(database_name, title, verbose) for database_name in database_names]
     
+    bd.projects.set_current(project_name)
+    
+    print(f"\n** Getting activities list from databases in {project_name} with the filter conditions:")
+    for k, v in filters.items():
+        print(f"\t{k}: {v}")
+    print('\n** Be patient... ')
+    
+    # multiprocessing to split the work across multiple cores
     with Pool(num_cpus) as pool:
         pool.map(worker, args_list)
 
-def GetActivities(database_name, project_name, title):
+def GetActivities(database_name, title, verbose):
 
-    print("\n** Getting activities list from database:", database_name)
     # set the project
-    bd.projects.set_current(project_name)
     db = bd.Database(database_name)
 
     acts_all = pd.DataFrame([x.as_dict() for x in db])
@@ -71,13 +77,15 @@ def GetActivities(database_name, project_name, title):
     except KeyError as e:
         missing_columns = re.findall(r"\'(.*?)\'", str(e))
         columns = list(set(columns) - set(missing_columns))
-        print(f"\n\t** Warning: Column(s) '{missing_columns}' not found in DataFrame '{database_name}'. Removing from selection. **\n")
+        if verbose: 
+            print(f"\n\t** Warning: Column(s) '{missing_columns}' not found in DataFrame '{database_name}'. Removing from selection. **\n")
         acts_all = acts_all[columns]
     
-    print(f"\t{database_name}: # of activities before filtering:", len(acts_all))
+    
     
     # pull out and look at the categories 
-    print("\t* Extracting classification data")
+    if verbose:
+        print("\t* Extracting classification data")
     # Define the function to extract values
     def extract_values(row):
         isic_num, isic_name, cpc_num, cpc_name = '', '', '', ''
@@ -104,34 +112,26 @@ def GetActivities(database_name, project_name, title):
     # Drop the original "classifications" column
     acts_all = acts_all.drop("classifications", axis=1)
 
-    print(f'** {database_name} **' )
     # Extracting and processing unique ISIC names
     isic_names = acts_all["ISIC_name"].unique()
     isic_names = [name for name in isic_names if isinstance(name, str) and name]
     isic_names.sort()
-    print("\t# of ISIC categories:", len(isic_names))
 
     # Extracting and processing unique CPC names
     cpc_names = acts_all["CPC_name"].unique().tolist()
     cpc_names = [name for name in cpc_names if isinstance(name, str) and name]
     cpc_names.sort()
-    print("\t# of CPC categories:", len(cpc_names))
 
     # Filter activities in database to select those of interest
-    print("\t* Filtering activities")
-
     acts = filter_dataframe(acts_all, filters)
     
-    print("\t# of activities after filtering:", len(acts))
 
     # look at the categories in the activities
-    isic = acts.ISIC_name.unique()
-    isic.sort()
-    print("\t# of ISIC categories after filtering:", len(isic))
-    cpc =  acts.CPC_name.unique().tolist()
-    cpc.sort()
-    print("\t# of CPC categories after filtering:", len(cpc))
-
+    isic_names_filtered = acts.ISIC_name.unique()
+    isic_names_filtered.sort()
+    cpc_names_filtered =  acts.CPC_name.unique().tolist()
+    cpc_names_filtered.sort()
+    
 # assign product categories and sub-categories based on CPC and ISIC codes
     acts["prod_category"] = ""
     acts["prod_sub_category"] = ""
@@ -214,16 +214,33 @@ def GetActivities(database_name, project_name, title):
 
     # save to a file for each database
     f = dir_tmp / f"activities_list_from_{db.name}_{title}.csv"
-    print("\n\tSaved activities list to csv:\n\t", f)
     acts.to_csv(f, sep=";", index=False)
+    
+    info = (f'** {database_name} **\n'
+            f'\t{database_name}: # of activities before filtering: {len(acts_all)})\n'
+            f'\t# of ISIC categories: {len(isic_names)}\n'
+            f'\t# of CPC categories: {len(cpc_names)}\n'
+            f'\t* Filtering activities\n'
+            f'\t# of activities after filtering: {len(acts)}\n'
+            f'\t# of ISIC categories after filtering: {len(isic_names_filtered)}\n'
+            f'\t# of CPC categories after filtering: {len(cpc_names_filtered)}\n'
+            f'\n\tSaved activities list to csv:\n\t {f}')
+
+    if verbose:
+        print(info)
+    else:
+        text = "{:<50.50}".format(database_name)
+        print(f'  {text} : {len(acts_all)} --> {len(acts)} acts')
+
+    return 
+    
     
 
 def MergeActivities(database_names, project_name, title):
 
-    print("\n** Merging activities lists from all selected databases **\n\t" + '\n\t'.join(database_names))
+    print("\n** Merging activities lists from all selected databases **")
     
     files = [f"activities_list_from_{x}_{title}.csv" for x in database_names]
-    database_names_string = "_".join(database_names)
     
     paths = [dir_tmp / f for f in files]
 
@@ -238,7 +255,7 @@ def MergeActivities(database_names, project_name, title):
         
     file_name = dir_data / f"activities_list_merged_{project_name}_{title}.csv"
     df_merged.to_csv(file_name, sep=';', index=False)
-    print("\nSaved combined activities list to csv:\n\t", file_name)
+    print("\n** Saved combined activities list to csv:\n\t", file_name)
     
     return
 

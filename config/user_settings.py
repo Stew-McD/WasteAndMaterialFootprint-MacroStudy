@@ -27,15 +27,22 @@ from pathlib import Path
 import bw2data as bd
 
 
-title = 'markets'
+title = 'markets01'
 project_name = 'WMF-SSP125_cutoff'
+limit = 100 # limit the number of activities to be processed (for testing)
+verbose = False
+
 
 if project_name not in bd.projects:
+    print(f'{"*"*80}\n')
     print(f'Project {project_name} not found, exiting...')
+    print(f'{"*"*80}\n')
     exit(0)
 
 else:
-    print(f'Project {project_name} found, continuing...')
+    print(f'\n\n{"="*80}\n')
+    print(f'\t\t *** Starting processing in project {project_name} *** ')
+    print(f'\n{"="*80}\n')
     bd.projects.set_current(project_name)
 
 

@@ -24,6 +24,7 @@
 import os
 import sys
 from pathlib import Path
+import cowsay
 
     # Set the working directory to the location of this script
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -43,14 +44,14 @@ from FilterActivities import GetActivitiesMP, MergeActivities
 from Calculations import LCIA, MergeResults 
 from Processing import Raw2Cooked, ExtractTopActivities
 
-from user_settings import title, project_name, database_names, activities_list
+from user_settings import title, project_name, database_names, activities_list, limit, verbose
 
-print(f'{"="*80}')
-print('   \t\t\t*** Starting calculations ***')
-print(f'{"="*80}\n')
+print('   \t\t\t*** Starting script main.py ***')
+print(f'{"."*80}\n')
 
-print(f"\n\n*** Calculating the {title} activities' LCIAs \
-for the following databases:\n\t" + '\n\t'.join(database_names))
+if verbose:
+    print(f"\n*** Calculating the '{title}' activities' LCIAs \
+    for the following databases:\n\t" + '\n\t'.join(database_names))
 
 #%% FILTER ACTIVITIES
 
@@ -61,11 +62,11 @@ MergeActivities(database_names, project_name, title)
     
 
 #%% RUN CALCULATIONS
-LCIA(activities_list, project_name, title, limit=100)
+LCIA()
 
 # merge results from all databases
-# combined_raw_csv, combined_raw_pickle = \
-#     MergeResults(project_name, title)
+combined_raw_csv, combined_raw_pickle = \
+    MergeResults(project_name, title)
 
 # #%% PROCESS RESULTS
 
@@ -76,8 +77,16 @@ LCIA(activities_list, project_name, title, limit=100)
 # top_csv, top_pickle = \
 #     ExtractTopActivities(combined_cooked_pickle)
 
+print("\n", flush=True)
+print(f"\n\n{'@'*80}")
 print("\n\n*** Finished calculations for the following databases:\
       \n\t" + '\n\t'.join(database_names))
+print(f"\n{'@'*80}\n\n")
+
+cowsay.turtle("GREAT SUCCESS!!")
+
+
+
 
 
 
