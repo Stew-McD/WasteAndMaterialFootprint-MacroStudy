@@ -34,7 +34,7 @@ import bw2data as bd
 
 
 title = 'markets'
-project_name = 'WMF-default'
+project_name = 'WMF-SSP125_cutoff'
 limit = None # limit the number of activities to be processed (for testing)
 verbose = False
 use_multiprocessing = True
