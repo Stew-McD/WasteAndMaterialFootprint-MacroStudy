@@ -50,8 +50,7 @@ print('   \t\t\t*** Starting script main.py ***')
 print(f'{"."*80}\n')
 
 if verbose:
-    print(f"\n*** Calculating the '{title}' activities' LCIAs \
-    for the following databases:\n\t" + '\n\t'.join(database_names))
+    print(f"\n*** Calculating the '{title}' activities' LCIAs for the following databases:\n\t" + '\n\t'.join(database_names))
 
 #%% FILTER ACTIVITIES
 
@@ -66,12 +65,12 @@ LCIA()
 
 # merge results from all databases
 
-MergeResults()
+#MergeResults()
 
 # #%% PROCESS RESULTS
 
 
-Raw2Cooked()
+#Raw2Cooked()
 
 # # extract top activities
 # top_csv, top_pickle = \

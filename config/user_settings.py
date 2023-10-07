@@ -24,14 +24,22 @@
 import os
 import numpy as np
 from pathlib import Path
+from multiprocessing import cpu_count
+
+custom_bw2_dir = os.path.expanduser("~") + '/brightway2data'
+if custom_bw2_dir:
+    os.environ["BRIGHTWAY2_DIR"] = custom_bw2_dir
+
 import bw2data as bd
 
 
-title = 'markets_test'
+title = 'markets'
 project_name = 'WMF-default'
-limit = 10 # limit the number of activities to be processed (for testing)
+limit = None # limit the number of activities to be processed (for testing)
 verbose = False
+use_multiprocessing = True
 
+num_cpus = int(os.environ.get('SLURM_CPUS_PER_TASK', os.environ.get('SLURM_JOB_CPUS_PER_NODE', cpu_count())))
 
 if project_name not in bd.projects:
     print(f'{"*"*80}\n')
@@ -48,15 +56,14 @@ else:
 
 database_names = None # you could also specify a list of databases here
 
-# WMF was the prefix for all biosphere databases processed with the WasteAndMaterialFootprint tool
+# extract all databases in the project except those in the exclude list (ie. the biosphere and the WasteAndMaterialFootprint database)
 if not database_names:
-    exclude = ["biosphere", 'WMF-'] # add to here if you want
+    exclude = ["biosphere", 'WasteAndMaterialFootprint'] # add to here if you want
     database_names = sorted([x for x in bd.databases if not any(e in x for e in exclude)])
 
 
 # Define filters for activities of interest
 # Can leave as an empty list or include specific names to filter.
-
 # Uncommenting a name (e.g. 'battery production') will include it in the filter.
 names_filter = [
     'market for',
@@ -91,6 +98,7 @@ locations_filter = [
 units_filter = [
     'kilogram', 
     'cubic meter',
+    'unit',
 ]
 
 filters = {
@@ -111,8 +119,8 @@ methods_material = [x for x in bd.methods.list if "Material Demand Footprint" in
 
 METHOD_KEYWORDS = [
     # "Ecological Footprint",
-    "Crustal Scarcity Indicator 2020",
-    'ReCiPe 2016 v1.03, endpoint (H) no LT',
+    # "Crustal Scarcity Indicator 2020",
+    # 'ReCiPe 2016 v1.03, endpoint (H) no LT',
     # 'Cumulative Energy Demand (CED)',
     # 'Cumulative Exergy Demand (CExD)',
 ]

@@ -48,10 +48,6 @@ def Raw2Cooked():
 
     def _clean_data(df):
         
-        # Rename columns with capital letters (the material demand ones)
-        capital_columns = [col for col in df.columns if col[0].isupper()]
-        df.rename(columns={col: col + " (demand)" for col in capital_columns}, inplace=True)
-        
         # Remove columns with all zeros (and other unwanted columns)
         cols_to_drop = df.columns[(df == 0).all() | df.isnull().all()].to_list()
         cols_to_drop += ['parameters full', 'log parameters', 'amount', 'worksheet name', 'activity type']
