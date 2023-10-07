@@ -99,8 +99,6 @@ platformdirs==3.10.0
 plotly==5.17.0
 pox==0.3.3
 ppft==1.7.6.7
--e git+ssh://git@github.com/Stew-McD/premise.git@9c7475e8243e88b17c98fc4fe3b026fb8f1c33d1#egg=premise
-premise-gwp==0.9.6
 prettytable==3.9.0
 prompt-toolkit==3.0.39
 psutil==5.9.5
