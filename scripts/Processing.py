@@ -48,33 +48,31 @@ def Raw2Cooked():
 
     def _clean_data(df):
         
-        # Remove columns with all zeros (and other unwanted columns)
+# Remove columns with all zeros (and other unwanted columns)
         cols_to_drop = df.columns[(df == 0).all() | df.isnull().all()].to_list()
         cols_to_drop += ['parameters full', 'log parameters', 'amount', 'worksheet name', 'activity type']
-        
+
         cols_to_drop = [col for col in cols_to_drop if col in df.columns]
         print(f"Dropped columns: {list(cols_to_drop)}")
         df.drop(columns=cols_to_drop, inplace=True)
-        
+
         # Remove rows that have neither waste nor material demand
         try:
             no_waste = df[(df.waste_total_solid + df.waste_total_liquid) == 0]
-            print(f"\n* No waste found for {len(no_waste)} activities: \n", no_waste.name.values)
+            print(f"\n* No waste found for {len(no_waste)} activities: \n\n", no_waste.name.values)
         except Exception as e:
             print("\n* No waste found for any activities, something went wrong.:'( *")
             print("Check the raw data, maybe reprocess your database and try again.")
             
-            
-            
-
         cols_material = [col for col in df.columns if "(demand)" in col]
-        no_material = df[df[cols_material].all(axis=1) == 0]
-        
-        print(f"\n* No material demand found for {len(no_material)} activities: \n {no_material.name.values}")
-        
-        rows_to_drop = list(set(no_waste.index.to_list()).union(set(no_material.index.to_list())))
-        
-        df.drop(rows_to_drop, inplace=True).reset_index(drop=True)
+        no_material = df[df[cols_material].sum(axis=1) == 0]
+
+        print(f"\n* No material demand found for {len(no_material)} activities: \n\n {no_material.name.values}")
+
+        rows_to_drop = list(set(no_waste.index).union(set(no_material.index)))
+
+        df.drop(rows_to_drop, inplace=True)
+        df = df.reset_index(drop=True)
 
 
         return df

@@ -56,21 +56,21 @@ if verbose:
 
 # filter activities from databases
 GetActivitiesMP(database_names, project_name, title)
-# merge activities from all databases
+# # merge activities from all databases
 MergeActivities(database_names, project_name, title)
     
 
-#%% RUN CALCULATIONS
+# #%% RUN CALCULATIONS
 LCIA()
 
 # merge results from all databases
 
-#MergeResults()
+MergeResults()
 
-# #%% PROCESS RESULTS
+#%% PROCESS RESULTS
 
 
-#Raw2Cooked()
+Raw2Cooked()
 
 # # extract top activities
 # top_csv, top_pickle = \
