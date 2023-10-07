@@ -1,0 +1,7 @@
+
+
+** 2023-10-07 16:57:55 -- * Completed 76 LCIA calculations: 1 activities and 76 methods from ecoinvent_3.9.1_cutoff in: 0:00:01
+
+** 2023-10-07 17:09:25 -- * Completed 7600 LCIA calculations: 100 activities and 76 methods from ecoinvent_3.9.1_cutoff in: 0:01:55
+
+** 2023-10-07 18:22:26 -- * Completed 152800 LCIA calculations: 3056 activities and 50 methods from ecoinvent_3.9.1_cutoff in: 0:48:43
