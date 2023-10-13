@@ -27,8 +27,7 @@ import numpy as np
 from pathlib import Path
 import sys
 
-from user_settings import combined_raw_pickle, activities_list, combined_cooked_pickle, combined_cooked_csv
-
+from user_settings import combined_raw_pickle, activities_list, combined_cooked_pickle, combined_cooked_csv, filters
     
 def Raw2Cooked():
     """Convert raw data to processed data."""
@@ -42,20 +41,22 @@ def Raw2Cooked():
         
         print("\n* Loading raw calculation results")
         df_results = pd.read_pickle(combined_raw_pickle).reset_index(drop=True)
-        df = pd.merge(acts, df_results, how='right', on=['code', 'name', 'database', 'location'])
+        df = pd.merge(acts, df_results, how='inner', on=['code', 'name', 'database', 'location'])
         
         return df
 
     def _clean_data(df):
         
+        df['database'] = df['database'].str.replace("_3.9_", "_3.9.1_")
 # Remove columns with all zeros (and other unwanted columns)
         cols_to_drop = df.columns[(df == 0).all() | df.isnull().all()].to_list()
-        cols_to_drop += ['parameters full', 'log parameters', 'amount', 'worksheet name', 'activity type']
+        cols_to_drop += ['parameters full', 'log parameters', 'amount', 'worksheet name', 'activity type',]
+
 
         cols_to_drop = [col for col in cols_to_drop if col in df.columns]
         print(f"Dropped columns: {list(cols_to_drop)}")
         df.drop(columns=cols_to_drop, inplace=True)
-
+        df.location.replace({'World': 'GLO'}, inplace=True)
         # Remove rows that have neither waste nor material demand
         try:
             no_waste = df[(df.waste_total_solid + df.waste_total_liquid) == 0]
@@ -70,22 +71,27 @@ def Raw2Cooked():
         print(f"\n* No material demand found for {len(no_material)} activities: \n\n {no_material.name.values}")
 
         rows_to_drop = list(set(no_waste.index).union(set(no_material.index)))
-
+        rows_to_drop_file = Path(str(combined_cooked_csv).replace("cooked", "dropped_rows"))
+        rows_to_drop_df = df.iloc[rows_to_drop].reset_index(drop=True)
+        
+        rows_to_drop_df.to_csv(rows_to_drop_file, sep=";", index=False)
+        
+        print(f"\n* Dropping {len(rows_to_drop)} rows with no waste or material demand")
+        print(f'Saving dropped rows to csv, {rows_to_drop_file}')
+        
         df.drop(rows_to_drop, inplace=True)
         df = df.reset_index(drop=True)
-
 
         return df
 
     def _adjust_units_and_calculations(df):
-        """Adjust units and perform relevant calculations."""
-    
-        # Replace zeros with NaN for subsequent calculations
+        """Adjust units and perform relevant calculations..."""
+        
+        print("\n* Adjusting units and performing calculations")
         df = df.replace({0: np.nan})
 
-        # Add columns for each end-of-life category as a percentage of total waste
         cols_percentage, cols_waste, cols_solid, cols_liquid = [], [], [], []
-        for i in ["hazardous", "non-hazardous", "landfill", "recycling", "incineration", "open-burning", "digestion", 'composting', 'radioactive']:
+        for i in ["hazardous", "non_hazardous", "landfill", "recycling", "incineration", "open_burning", "digestion", 'composting', 'radioactive']:
             for unit in ['_solid', '_liquid']:
                 col_name = "waste_" + i + unit
                 if col_name in df.columns:
@@ -97,11 +103,10 @@ def Raw2Cooked():
                     else:
                         cols_liquid.append(col_name)
 
-        # Convert units
-        df[cols_solid] = df.apply(lambda x: x[cols_solid] / 1000 if x['unit'] == 'cubic meter' else x[cols_solid], axis=1)
-        df[cols_liquid] = df.apply(lambda x: x[cols_liquid] * 1000 if x['unit'] == 'kilogram' else x[cols_liquid], axis=1)
+        # Vectorized unit conversion
+        df.loc[df['unit'] == 'cubic meter', cols_solid] = df.loc[df['unit'] == 'cubic meter', cols_solid] / 1000
+        df.loc[df['unit'] == 'kilogram', cols_liquid] = df.loc[df['unit'] == 'kilogram', cols_liquid] * 1000
 
-        # Add and calculate new columns
         df['waste_total'] = df.waste_total_solid + df.waste_total_liquid
         df['waste_haz_tot'] = df.waste_hazardous_liquid + df.waste_hazardous_solid
         df['waste_haz_tot_per'] = df.waste_haz_tot.divide(df.waste_total)
@@ -112,11 +117,45 @@ def Raw2Cooked():
         df = df.drop('waste_categorised', axis=1)
 
         return df
+
+    
+    import pandas as pd
+
+    def _split_database_name(df):
+        # Define a helper function to split a single database name
+        def split_name(name):
+            parts = name.split('_')
+            
+            # If the name is simpler like "ecoinvent_3.9_cutoff"
+            if len(parts) == 3 and "." in parts[1]:
+                return None, None, None, None
+            
+            model = parts[3] if len(parts) > 3 else 'none'
+            pathway = parts[4].split('-')[0] if len(parts) > 4 else 'none'
+            subpathway = parts[4].split('-')[1] if len(parts) > 4 and '-' in parts[4] else 'none'
+            year = parts[5] if len(parts) > 5 else '2020'
+            
+            return model, pathway, subpathway, year
+        
+        # Apply the function to the 'database' column
+        split_data = df['database'].apply(split_name).apply(pd.Series)
+        split_data.columns = ['model', 'pathway', 'subpathway', 'year']
+        
+        # Find the index of the 'database' column
+        idx = df.columns.get_loc('database')
+
+        # Insert the new columns
+        for i, col_name in enumerate(split_data.columns, start=1):
+            df.insert(idx + i, col_name, split_data[col_name])
+
+        # df.drop(columns=['database'], inplace=True)
+        return df
     
     # run processing functions
     print("\n** Starting processing **")
     df = _load_data()
     df = _clean_data(df)
+    df = _split_database_name(df)
     df = _adjust_units_and_calculations(df)
     
     # save data
@@ -130,7 +169,7 @@ def Raw2Cooked():
 #%% extract top activities
 
 
-def ExtractTopActivities(combined_cooked_pickle, n_top=1):
+def ExtractTopActivities(n_top=1):
     """Extract top activities for each category and waste/material indicator.
     
     Parameters:
@@ -156,6 +195,8 @@ def ExtractTopActivities(combined_cooked_pickle, n_top=1):
     dbs = df.database.unique()
     df_top_all = pd.DataFrame()
 
+    df = df[df.unit == 'kilogram']
+    
     for db in dbs:
         topacts = {}
         for key, order in criteria.items():
@@ -165,7 +206,11 @@ def ExtractTopActivities(combined_cooked_pickle, n_top=1):
         df_top = pd.concat([value.assign(top=key) for key, value in topacts.items()], axis=0)
         
         df_top_all = pd.concat([df_top_all, df_top], axis=0).reset_index(drop=True)
-
+        
+      # Move 'top' column to index 1
+    top = df_top_all.pop('top')
+    df_top_all.insert(1, 'top', top)
+        
     cooked_path = Path(combined_cooked_pickle)
     file_top_pickle = cooked_path.with_name(f"{cooked_path.stem.replace('cookedresults', 'topactivities')}.pickle")
     file_top_csv = file_top_pickle.with_suffix('.csv')

@@ -34,10 +34,10 @@ import bw2data as bd
 
 
 title = 'markets'
-project_name = 'WMF-SSP125_cutoff'
+project_name = 'WMF-SSP125_cutoff2'
 limit = None # limit the number of activities to be processed (for testing)
 verbose = False
-use_multiprocessing = True
+use_multiprocessing = False
 
 num_cpus = int(os.environ.get('SLURM_CPUS_PER_TASK', os.environ.get('SLURM_JOB_CPUS_PER_NODE', cpu_count())))
 
@@ -79,14 +79,16 @@ cpc_num_filter = [
 
 # Specify keywords to exclude from the activities.
 exclude_filter = [
-    # 'recovery',
-    # 'Treatment', 
-    # 'disposal', 
-    # 'waste', 
-    # 'services', 
-    # 'Waste', 
-    # 'Site preparation', 
-    # 'Construction of'
+    'recovery',
+    'treatment', 
+    'disposal', 
+    'waste', 
+    'services', 
+    'waste', 
+    'scrap'
+    'site preparation', 
+    'construction',
+    'maintainence',
 ]
 
 locations_filter = [
@@ -101,12 +103,17 @@ units_filter = [
     'unit',
 ]
 
+activitytype_filter = [
+    'market activity',
+]
+
 filters = {
     "names": names_filter,
     "CPC_num": cpc_num_filter,
     "exclude": exclude_filter,
     "locations": locations_filter,
-    "units": units_filter
+    "units": units_filter,
+    "activity type": activitytype_filter,
 }
 
 
@@ -118,9 +125,9 @@ methods_waste = [x for x in bd.methods.list if "Waste Footprint" in x[0]]
 methods_material = [x for x in bd.methods.list if "Material Demand Footprint" in x[0]]
 
 METHOD_KEYWORDS = [
-    # "Ecological Footprint",
-    # "Crustal Scarcity Indicator 2020",
-    # 'ReCiPe 2016 v1.03, endpoint (H) no LT',
+    "Ecological Footprint",
+    "Crustal Scarcity Indicator 2020",
+    'ReCiPe 2016 v1.03, endpoint (H) no LT',
     # 'Cumulative Energy Demand (CED)',
     # 'Cumulative Exergy Demand (CExD)',
 ]
@@ -128,7 +135,7 @@ METHOD_KEYWORDS = [
 methods_other = [x for x in bd.methods.list if any(e in x[0] for e in METHOD_KEYWORDS)]
 
 methods = methods_waste + methods_material + methods_other
-# methods = methods_other
+#methods = methods_other
 
 
 # %% DIRECTORY PATHS

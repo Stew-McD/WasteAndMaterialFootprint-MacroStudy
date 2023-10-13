@@ -61,7 +61,7 @@ MergeActivities(database_names, project_name, title)
     
 
 # #%% RUN CALCULATIONS
-LCIA()
+# LCIA()
 
 # merge results from all databases
 
@@ -73,8 +73,7 @@ MergeResults()
 Raw2Cooked()
 
 # # extract top activities
-# top_csv, top_pickle = \
-#     ExtractTopActivities(combined_cooked_pickle)
+ExtractTopActivities(n_top=1)
 
 print("\n", flush=True)
 print(f"\n\n{'@'*80}")

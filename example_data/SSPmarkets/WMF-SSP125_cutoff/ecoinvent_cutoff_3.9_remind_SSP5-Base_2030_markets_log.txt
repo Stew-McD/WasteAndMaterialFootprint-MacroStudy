@@ -1,0 +1,3 @@
+
+
+** 2023-10-08 12:47:37 -- * Completed 155950 LCIA calculations: 3119 activities and 50 methods from ecoinvent_cutoff_3.9_remind_SSP5-Base_2030 in: 4:48:03
