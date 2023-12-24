@@ -151,7 +151,7 @@ dir_data = dir_root / 'data' / title
 dir_tmp = dir_data / 'tmp' / project_name
 dir_logs = dir_data / 'logs' / project_name
 dir_results = dir_data / 'results' / project_name
-
+dir_figures = dir_results / 'figures' 
 dirs = [dir_data, dir_tmp, dir_logs, dir_results]
 
 for DIR in dirs:
