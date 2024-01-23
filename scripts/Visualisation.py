@@ -79,7 +79,7 @@ def pprint_df(dframe):
 
 print("\n==== Processing data ====")
 
-path = "/home/stew/code/gh/WasteFootprintTestCases/MacroStudy-Markets/data/tmp/con391_cutoff391_apos391_market_selection_combined_cookedresults_df.pickle"
+path = "/home/stew/code/gh/WasteAndMaterialFootprint-MacroStudy/data/markets/results/WMFootprint-SSP2LT-cutoff/markets_combined_cookedresults_df.pickle"
 
 act_selection = "market-selection"
 df = pd.read_pickle(path)

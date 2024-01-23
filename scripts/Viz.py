@@ -21,11 +21,14 @@
 |===============================================================|
 '''
 
+import os
 from pathlib import Path
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from user_settings import title, project_name, dir_results, dir_figures
+
+os.makedirs(dir_figures, exist_ok=True)
 
 file_all = list(Path(dir_results).glob(f'*cookedresults_df.csv'))
 file_top = list(Path(dir_results).glob(f'*topactivities_df.csv'))
@@ -33,9 +36,31 @@ file_top = list(Path(dir_results).glob(f'*topactivities_df.csv'))
 df_all = pd.read_csv(file_all[0], index_col=None, sep=';')
 df_top = pd.read_csv(file_top[0], index_col=None, sep=';')
 
-cols_meta = ['name', 'database', 'code', 'prod_category', 'prod_sub_category', 'location', 'reference product', 'unit', 'model','pathway', 'subpathway','year',]
+cols_meta = ['name', 'database', 'code', 'prod_category', 'prod_sub_category', 'reference product', 'unit', 'model','pathway', 'subpathway','year',]
+
+
 cols_waste = [x for x in df_all.columns if 'waste' in x]
+cols_waste += [
+    'Hazardous (kg)', 'Hazardous (m3)', 'Incineration (kg)', 'Incineration (m3)', 
+    'Landfill (kg)', 'Landfill (m3)', 'Openburning (kg)', 'Radioactive (m3)', 
+    'Recycling (kg)', 'Total (kg)', 'Total (m3)'
+]
+
 cols_material = [x for x in df_all.columns if '(demand)' in x]
+cols_material += [
+    'Aluminium', 'Antimony', 'Bauxite', 'Beryllium', 'Borates', 'Cadmium', 
+    'Cement', 'Cerium', 'Chromium', 'Coal(black)', 'Coal(brown)', 'Cobalt', 
+    'Coke', 'Copper', 'Dysprosium', 'Electricity', 'Erbium', 'Europium', 
+    'Fluorspar', 'Gadolinium', 'Gallium', 'Gold', 'Graphite', 'Helium', 
+    'Holmium', 'Hydrogen', 'Indium', 'Latex', 'Lead', 'Lithium', 'Magnesium', 
+    'Natural gas', 'Nickel', 'Palladium', 'Petroleum', 'Phosphate rock', 
+    'Platinum', 'Rare earth', 'Rhodium', 'Sand', 'Scandium', 'Selenium', 
+    'Silicon', 'Silver', 'Strontium', 'Tantalum', 'Tellurium', 'Tin', 
+    'Titanium', 'Tungsten', 'Uranium', 'Vegetable oil', 'Water', 'Zinc', 
+    'Zirconium'
+]
+
+
 cols_methods = [x for x in df_all.columns if x not in cols_meta + cols_waste + cols_material]
 cols_to_normalize = [x for x in df_all.columns if x not in cols_meta]
 

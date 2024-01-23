@@ -43,6 +43,8 @@ def Raw2Cooked():
         df_results = pd.read_pickle(combined_raw_pickle).reset_index(drop=True)
         df = pd.merge(acts, df_results, how='inner', on=['code', 'name', 'database', 'location'])
         
+        for col in df.columns:
+            print(col)
         return df
 
     def _clean_data(df):
@@ -52,34 +54,34 @@ def Raw2Cooked():
         cols_to_drop = df.columns[(df == 0).all() | df.isnull().all()].to_list()
         cols_to_drop += ['parameters full', 'log parameters', 'amount', 'worksheet name', 'activity type',]
 
-
+ 
         cols_to_drop = [col for col in cols_to_drop if col in df.columns]
         print(f"Dropped columns: {list(cols_to_drop)}")
         df.drop(columns=cols_to_drop, inplace=True)
         df.location.replace({'World': 'GLO'}, inplace=True)
-        # Remove rows that have neither waste nor material demand
-        try:
-            no_waste = df[(df.waste_total_solid + df.waste_total_liquid) == 0]
-            print(f"\n* No waste found for {len(no_waste)} activities: \n\n", no_waste.name.values)
-        except Exception as e:
-            print("\n* No waste found for any activities, something went wrong.:'( *")
-            print("Check the raw data, maybe reprocess your database and try again.")
+        # # Remove rows that have neither waste nor material demand
+        # try:
+        #     no_waste = df[(df.waste_total_solid + df.waste_total_liquid) == 0]
+        #     print(f"\n* No waste found for {len(no_waste)} activities: \n\n", no_waste.name.values)
+        # except Exception as e:
+        #     print("\n* No waste found for any activities, something went wrong.:'( *")
+        #     print("Check the raw data, maybe reprocess your database and try again.")
             
-        cols_material = [col for col in df.columns if "(demand)" in col]
-        no_material = df[df[cols_material].sum(axis=1) == 0]
+        # cols_material = [col for col in df.columns if "(demand)" in col]
+        # no_material = df[df[cols_material].sum(axis=1) == 0]
 
-        print(f"\n* No material demand found for {len(no_material)} activities: \n\n {no_material.name.values}")
+        # print(f"\n* No material demand found for {len(no_material)} activities: \n\n {no_material.name.values}")
 
-        rows_to_drop = list(set(no_waste.index).union(set(no_material.index)))
-        rows_to_drop_file = Path(str(combined_cooked_csv).replace("cooked", "dropped_rows"))
-        rows_to_drop_df = df.iloc[rows_to_drop].reset_index(drop=True)
+        # rows_to_drop = list(set(no_waste.index).union(set(no_material.index)))
+        # rows_to_drop_file = Path(str(combined_cooked_csv).replace("cooked", "dropped_rows"))
+        # rows_to_drop_df = df.iloc[rows_to_drop].reset_index(drop=True)
         
-        rows_to_drop_df.to_csv(rows_to_drop_file, sep=";", index=False)
+        # rows_to_drop_df.to_csv(rows_to_drop_file, sep=";", index=False)
         
-        print(f"\n* Dropping {len(rows_to_drop)} rows with no waste or material demand")
-        print(f'Saving dropped rows to csv, {rows_to_drop_file}')
+        # print(f"\n* Dropping {len(rows_to_drop)} rows with no waste or material demand")
+        # print(f'Saving dropped rows to csv, {rows_to_drop_file}')
         
-        df.drop(rows_to_drop, inplace=True)
+        # df.drop(rows_to_drop, inplace=True)
         df = df.reset_index(drop=True)
 
         return df
@@ -91,14 +93,14 @@ def Raw2Cooked():
         df = df.replace({0: np.nan})
 
         cols_percentage, cols_waste, cols_solid, cols_liquid = [], [], [], []
-        for i in ["hazardous", "non_hazardous", "landfill", "recycling", "incineration", "open_burning", "digestion", 'composting', 'radioactive']:
-            for unit in ['_solid', '_liquid']:
-                col_name = "waste_" + i + unit
+        for i in ["Hazardous", "Landfill", "Recycling", "Incineration", "Openburning", "Digestion", 'Composting', 'Radioactive']:
+            for unit in [' (kg)', ' (m3)']:
+                col_name = i + unit
                 if col_name in df.columns:
                     cols_percentage.append(col_name + "_per")
-                    df[col_name + "_per"] = 100 * df[col_name].divide(df["waste_total" + unit].replace({0: np.nan}))
+                    df[col_name + "_per"] = 100 * df[col_name].divide(df["Total" + unit].replace({0: np.nan}))
                     cols_waste.append(col_name)
-                    if 'solid' in unit:
+                    if '(kg)' in unit:
                         cols_solid.append(col_name)
                     else:
                         cols_liquid.append(col_name)
@@ -107,11 +109,11 @@ def Raw2Cooked():
         df.loc[df['unit'] == 'cubic meter', cols_solid] = df.loc[df['unit'] == 'cubic meter', cols_solid] / 1000
         df.loc[df['unit'] == 'kilogram', cols_liquid] = df.loc[df['unit'] == 'kilogram', cols_liquid] * 1000
 
-        df['waste_total'] = df.waste_total_solid + df.waste_total_liquid
-        df['waste_haz_tot'] = df.waste_hazardous_liquid + df.waste_hazardous_solid
+        df['waste_total'] = df["Total (kg)"] + df["Total (m3)"]
+        df['waste_haz_tot'] = df["Hazardous (kg)"] + df["Hazardous (m3)"]
         df['waste_haz_tot_per'] = df.waste_haz_tot.divide(df.waste_total)
-        df['waste_circ'] = (df.waste_composting_solid + df.waste_digestion_solid + df.waste_recycling_solid).div(df.waste_total)
-        cols_categorised = [x for x in cols_waste if 'tot' not in x and "hazardous" not in x and "radioactive" not in x]
+        df['waste_circ'] = (df["Recycling (kg)"] + df["Digestion (kg)"] + df["Composting (kg)"]) / df.waste_total
+        cols_categorised = [x for x in cols_waste if 'Total' not in x and "Hazardous" not in x and "Radioactive" not in x]
         df['waste_categorised'] = df[cols_categorised].sum(axis=1)
         df['waste_uncategorised_per'] = 100 * (df.waste_total - df.waste_categorised).div(df.waste_total)
         df = df.drop('waste_categorised', axis=1)
@@ -184,8 +186,8 @@ def ExtractTopActivities(n_top=1):
     # Define criteria for sorting
     criteria = {
         'waste_total': 'desc',
-        'waste_total_solid': 'desc',
-        'waste_total_liquid': 'desc',
+        'Total (kg)': 'desc',
+        'Total (m3)': 'desc',
         'waste_haz_tot': 'desc',
         'waste_haz_tot_per': 'desc',
         'waste_circ': 'desc'

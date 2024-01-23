@@ -54,20 +54,20 @@ if verbose:
 
 #%% FILTER ACTIVITIES
 
-# filter activities from databases
-GetActivitiesMP(database_names, project_name, title)
-# # merge activities from all databases
-MergeActivities(database_names, project_name, title)
+# # filter activities from databases
+# GetActivitiesMP(database_names, project_name, title)
+# # # merge activities from all databases
+# MergeActivities(database_names, project_name, title)
     
 
-# #%% RUN CALCULATIONS
+# # #%% RUN CALCULATIONS
 # LCIA()
 
 # merge results from all databases
 
-MergeResults()
+# MergeResults()
 
-#%% PROCESS RESULTS
+# #%% PROCESS RESULTS
 
 
 Raw2Cooked()

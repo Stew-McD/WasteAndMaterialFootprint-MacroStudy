@@ -34,9 +34,9 @@ import bw2data as bd
 
 
 title = 'markets'
-project_name = 'WMF-SSP125_cutoff2'
+project_name = "WMFootprint-SSP2LT-cutoff"
 limit = None # limit the number of activities to be processed (for testing)
-verbose = False
+verbose = True
 use_multiprocessing = False
 
 num_cpus = int(os.environ.get('SLURM_CPUS_PER_TASK', os.environ.get('SLURM_JOB_CPUS_PER_NODE', cpu_count())))
@@ -121,20 +121,20 @@ filters = {
 
 # Filter methods to select those of interest
 methods_all =  np.unique([x[0] for x in bd.methods.list])
-methods_waste = [x for x in bd.methods.list if "Waste Footprint" in x[0]]
-methods_material = [x for x in bd.methods.list if "Material Demand Footprint" in x[0]]
+# methods_waste = [x for x in bd.methods.list if "Waste Footprint" in x[0]]
+# methods_material = [x for x in bd.methods.list if "Demand:" in x[1]]
 
-METHOD_KEYWORDS = [
-    "Ecological Footprint",
+KEYWORDS_METHODS = [
+    "ReCiPe 2016 v1.03, midpoint (I)",
+    "EF v3.1 EN15804",
+    "EDIP 2003 no LT",
     "Crustal Scarcity Indicator 2020",
-    'ReCiPe 2016 v1.03, endpoint (H) no LT',
-    # 'Cumulative Energy Demand (CED)',
-    # 'Cumulative Exergy Demand (CExD)',
+    "WasteAndMaterialFootprint",
 ]
 
-methods_other = [x for x in bd.methods.list if any(e in x[0] for e in METHOD_KEYWORDS)]
+methods_other = [x for x in bd.methods.list if any(e in x[0] for e in KEYWORDS_METHODS)]
 
-methods = methods_waste + methods_material + methods_other
+methods = methods_other # methods_waste + methods_material + 
 #methods = methods_other
 
 
